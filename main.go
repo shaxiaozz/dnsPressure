@@ -7,7 +7,6 @@ import (
 	"net"
 	"os"
 	"strings"
-	"sync"
 	"time"
 )
 
@@ -22,12 +21,13 @@ func resolveDomain(domain string) (time.Duration, error) {
 		PreferGo: true,
 	}
 
-	start := time.Now()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
+	start := time.Now()
 	_, err := resolver.LookupHost(ctx, domain)
 	duration := time.Since(start)
+
 	return duration, err
 }
 
@@ -59,20 +59,13 @@ func main() {
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
 
-	var wg sync.WaitGroup
-
 	for {
 		<-ticker.C
-		wg.Add(concurrency)
-
 		for i := 0; i < concurrency; i++ {
 			go func() {
-				defer wg.Done()
 				duration, err := resolveDomain(domain)
 				logResult(domain, duration, err)
 			}()
 		}
-
-		wg.Wait()
 	}
 }
